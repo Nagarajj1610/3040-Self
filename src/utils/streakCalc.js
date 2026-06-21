@@ -33,28 +33,29 @@ export function getLocalDateString(timestamp) {
  * @param {Date} [baseDate] - Optional base date (defaults to current system date) to make testing pure
  * @returns {number} The current streak count in days
  */
-export function calculateStreak(trips, baseDate = new Date()) {
-  if (!Array.isArray(trips) || trips.length === 0) {
-    return 0;
+export function calculateStreak(tripsOrDates, baseDate = new Date()) {
+  if (!Array.isArray(tripsOrDates) || tripsOrDates.length === 0) {
+    return { current: 0, longest: 0, lastLogDate: null };
   }
 
-  // Get unique YYYY-MM-DD strings for all trips
+  // Get unique YYYY-MM-DD strings
   const uniqueDates = new Set();
-  trips.forEach(trip => {
-    const dateStr = getLocalDateString(trip.timestamp);
+  tripsOrDates.forEach(item => {
+    // Check if it's a trip object with timestamp or just a date
+    const timestamp = item.timestamp ? item.timestamp : item;
+    const dateStr = getLocalDateString(timestamp);
     if (dateStr) {
       uniqueDates.add(dateStr);
     }
   });
 
   if (uniqueDates.size === 0) {
-    return 0;
+    return { current: 0, longest: 0, lastLogDate: null };
   }
 
-  // Convert Set to sorted Array descending (most recent first)
   const sortedDates = Array.from(uniqueDates).sort((a, b) => b.localeCompare(a));
+  const lastLogDate = new Date(sortedDates[0] + 'T00:00:00');
 
-  // Determine "today" and "yesterday" relative to baseDate
   const formatDate = (d) => {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -63,33 +64,56 @@ export function calculateStreak(trips, baseDate = new Date()) {
   };
 
   const todayStr = formatDate(baseDate);
-  
   const yesterday = new Date(baseDate);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = formatDate(yesterday);
 
-  // Check if the user logged a trip today or yesterday
+  // Calculate current streak
   const hasTripToday = sortedDates.includes(todayStr);
   const hasTripYesterday = sortedDates.includes(yesterdayStr);
 
-  if (!hasTripToday && !hasTripYesterday) {
-    return 0;
-  }
-
-  // The streak starts from either today (if logged today) or yesterday (if logged yesterday but not today)
-  let checkDate = hasTripToday ? new Date(baseDate) : yesterday;
-  let streak = 0;
-
-  while (true) {
-    const checkDateStr = formatDate(checkDate);
-    if (sortedDates.includes(checkDateStr)) {
-      streak++;
-      // Move to the previous day
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
+  let currentStreak = 0;
+  if (hasTripToday || hasTripYesterday) {
+    let checkDate = hasTripToday ? new Date(baseDate) : yesterday;
+    while (true) {
+      if (sortedDates.includes(formatDate(checkDate))) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
   }
 
-  return streak;
+  // Calculate longest streak
+  let longestStreak = 0;
+  let tempStreak = 0;
+  
+  if (sortedDates.length > 0) {
+    tempStreak = 1;
+    longestStreak = 1;
+    let prevDate = new Date(sortedDates[0] + 'T00:00:00');
+    
+    for (let i = 1; i < sortedDates.length; i++) {
+      const currDate = new Date(sortedDates[i] + 'T00:00:00');
+      const diffTime = Math.abs(prevDate - currDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        tempStreak++;
+        if (tempStreak > longestStreak) {
+          longestStreak = tempStreak;
+        }
+      } else {
+        tempStreak = 1;
+      }
+      prevDate = currDate;
+    }
+  }
+
+  return {
+    current: currentStreak,
+    longest: longestStreak,
+    lastLogDate: lastLogDate
+  };
 }
