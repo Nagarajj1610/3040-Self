@@ -1,0 +1,17 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "us-central1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "3040 Self",
+        "supportEmail": "gajji.nagaraju1610@gmail.com"
+      }
+    }
+  }
+}

@@ -39,10 +39,9 @@ export function getMockFact(mode, distance, co2, persona) {
   const normalizedMode = (mode || 'car').toLowerCase();
   
   const facts = personaMap[normalizedPersona] || friendFacts;
-  return (
-    facts[normalizedMode] || 
-    `Traveling ${distance} km by ${mode} released ${co2} kg of CO2. Selecting active travel or shared transit is an effective way to lower your carbon footprint.`
-  );
+  const factText = facts[normalizedMode] || 
+    `Traveling ${distance} km by ${mode} released ${co2} kg of CO2. Selecting active travel or shared transit is an effective way to lower your carbon footprint.`;
+  return `[⚠️ HARDCODED FALLBACK] ${factText}`;
 }
 
 /**
@@ -92,7 +91,7 @@ Keep the response very short, maximum 2 to 3 sentences. Focus on the environment
       throw new Error('No content returned in Gemini candidates');
     }
 
-    return text.trim();
+    return `[✨ GEMINI AI] ${text.trim()}`;
   } catch (error) {
     console.error('Gemini API call failed. Falling back to mock fact. Error:', error);
     return getMockFact(mode, distance, co2, persona);
